@@ -6,8 +6,8 @@ def import_weight(file_path):
 	w = np.load(file_path)#.tolist()
 	return w
 
-def model_vgg(data, model_path):
-	with tf.device("/gpu:0"):
+def model_vgg(data, model_path, gpu_num):
+	with tf.device("/gpu:" + gpu_num):
 		imported_weight = import_weight(model_path)
 		#imported_weight = import_weight('/hdd1/jcpark/archive/vgg16.npy')
 		#imported_weight = import_weight('/home/jongchan/Projects/Tensorflow/pretrained_nets/vgg16.npy')

@@ -19,7 +19,7 @@ np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)}, linewid
 from action import take_action, action_size
 
 class Agent:
-	def __init__(self, prefix):
+	def __init__(self, prefix, gpu_num):
 		""" init the class """
 		self.save_raw = True
 		self.finetune = False
@@ -27,6 +27,8 @@ class Agent:
 		self.use_history = True
 		self.use_batch_norm = False
 		self.deep_feature_model_path = "./vgg16_pretrain.npy"
+
+		self.gpu_num = gpu_num
 
 		self.enqueue_repeat = 3
 		self.prep	= None
@@ -299,7 +301,8 @@ class Agent:
 
 	def init_preprocessor(self):
 		""" load a pre-processor to convert raw input into state (feature vector?) """
-		self.prep = DeepFeatureNetwork([self.batch_size, 224, 224, 3], model_vgg, self.deep_feature_model_path)
+		self.prep = DeepFeatureNetwork([self.batch_size, 224, 224, 3], model_vgg, self.deep_feature_model_path,
+									   self.gpu_num)
 		self.prep.init_model()
 
 	def predict(self, state, is_training=True, use_target_q=False):
@@ -609,9 +612,9 @@ class Agent:
 		return initial_score, retouched_score
 
 class DeepFeatureNetwork:
-	def __init__(self, input_size, model_func, model_path):
+	def __init__(self, input_size, model_func, model_path, gpu_num):
 		self.input_tensor = tf.placeholder(tf.float32, shape=input_size)
-		self.feature, self.weights = model_func(self.input_tensor, model_path)
+		self.feature, self.weights = model_func(self.input_tensor, model_path, gpu_num)
 		
 	def init_model(self):
 		tf.initialize_variables(self.weights).run()
@@ -663,10 +666,12 @@ def enqueue_samples(self, coord):
 		state = next_state
 		score = new_score
 
+
 if __name__ == '__main__':
 	parser = argparse.ArgumentParser()
 	parser.add_argument("--model_path")
 	parser.add_argument("--prefix")
+	parser.add_argument("--gpu", type=str, default='0', help="assign a gpu")
 	args = parser.parse_args()
 	model_path = args.model_path
 	prefix = args.prefix
@@ -680,7 +685,7 @@ if __name__ == '__main__':
 	else:
 		os.makedirs('./test/'+prefix)
 
-	agent = Agent(prefix)
+	agent = Agent(prefix, args.gpu)
 	config = tf.ConfigProto()
 
 	with tf.Session(config=config) as sess:
