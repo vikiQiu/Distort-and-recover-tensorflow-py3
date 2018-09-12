@@ -434,7 +434,8 @@ class Agent:
         raw_imgs_target = []
         for img_path in img_list:
             imgs.append(imresize(imread(img_path, mode='RGB'), (224,224))/255.0-0.5)
-            target_path = os.path.join(os.path.join(os.path.dirname(os.path.dirname(img_path)),"target"), os.path.basename(img_path).split("__")[0])
+            target_path = os.path.join(os.path.join(os.path.dirname(os.path.dirname(img_path)), "target"),
+                                       os.path.basename(img_path))
             if "__" in os.path.basename(img_path):
                 op_str.append(os.path.basename(img_path).split("__")[1])
             else:
@@ -599,7 +600,7 @@ class Agent:
                     retouched_lab = color.rgb2lab(state_raw[i] + 0.5)
                     initial_lab = color.rgb2lab(state_raw_init[i] + 0.5)
                     initial_score += - np.sqrt(np.sum(( target_lab - initial_lab )**2, axis=2)).mean()/10.0
-                    retouched_score    += - np.sqrt(np.sum(( target_lab - retouched_lab )**2, axis=2)).mean()/10.0
+                    retouched_score += - np.sqrt(np.sum(( target_lab - retouched_lab )**2, axis=2)).mean()/10.0
             except Exception as e:
                 print(str(e))
         return initial_score, retouched_score
