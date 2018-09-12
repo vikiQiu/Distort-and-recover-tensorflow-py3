@@ -678,7 +678,7 @@ if __name__ == '__main__':
     model_path = args.model_path
     prefix = args.prefix
     
-    if prefix == None:
+    if prefix is None:
         print("please provide a valid prefix")
         sys.exit(1)
     elif os.path.exists('./test/'+prefix):
@@ -690,16 +690,19 @@ if __name__ == '__main__':
     agent = Agent(prefix, args)
     config = tf.ConfigProto()
 
-    with tf.Session(config=config) as sess:
+    sess = tf.Session(config=config)
+    with sess.as_default():
         agent.init_preprocessor()
         agent.init_model()
         agent.init_img_list()
         if model_path:
             agent.load_model(model_path)
-            print ("run test with model {}".format(model_path))
+            print("run test with model {}".format(model_path))
             agent.step = 0
             for i in range(agent.test_count):
                 init_score, final_score = agent.test(in_order=True, idx=i)
         else:
-            print ("start training with prefix {}".format(prefix))
+            print("start training with prefix {}".format(prefix))
             agent.train_with_queue()
+
+    sess.close()
