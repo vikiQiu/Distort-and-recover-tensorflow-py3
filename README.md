@@ -13,4 +13,4 @@ The origin [code](https://github.com/Jongchan/DISTORT-AND-RECOVER-CVPR18) from t
 
 **Train the model:**
 
-`CUDA_VISIBLE_DEVICES=3 python3 main.py --prefix test_run --gpu='3'`
+` CUDA_VISIBLE_DEVICES=3 python3 main.py --prefix test_run --data-dir="/home/vikiqiu/data/mit5k"`
