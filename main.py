@@ -21,16 +21,16 @@ np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)}, linewid
 
 
 class Agent:
-    def __init__(self, prefix, gpu_num):
+    def __init__(self, prefix, args):
         """ init the class """
         self.save_raw = True
         self.finetune = False
         self.logging = False
         self.use_history = True
         self.use_batch_norm = False
-        self.deep_feature_model_path = "./vgg16_pretrain.npy"
+        self.deep_feature_model_path = args.vgg16_path
 
-        self.gpu_num = gpu_num
+        self.gpu_num = args.gpu
 
         self.enqueue_repeat = 3
         self.prep = None
@@ -63,7 +63,7 @@ class Agent:
         self.delta = None
         self.min_delta = -1.0
         self.max_delta = 1.0
-        self.action_size = action_size
+        self.action_size = action_size # 12
         with tf.variable_scope('step'):
             self.step_op = tf.Variable(0, trainable=False, name='step')
             self.step_input = tf.placeholder('int32', None, name='step_input')
@@ -84,7 +84,7 @@ class Agent:
         self.prefix = prefix
 
         # MIT5K C
-        self.data_dir = 'E:\work\image enhancement\data\hdr'
+        self.data_dir = args.data_dir
         self.test_count = 63
 
         self.train_dir = os.path.join(self.data_dir, 'train')
@@ -160,8 +160,8 @@ class Agent:
             if self.step%self.save_interval == self.save_interval-1:
                 self.save_model(self.step+1)
             if self.step%self.test_step == self.test_step-1:
-                init_scores        = []
-                final_scores    = []
+                init_scores = []
+                final_scores = []
                 for i in range(self.test_count):
                     #init_score, final_score = self.test()
                     init_score, final_score = self.test(in_order=True, idx=i)
@@ -173,7 +173,6 @@ class Agent:
                     f.write("step %d\n"%self.step)
                     f.write(" ".join(init_scores)+"\n")
                     f.write(" ".join(final_scores)+"\n")
-
 
     def q_learning_minibatch(self, sample_terminal=False):
         state, reward, action, next_state, terminal = sess.run([self.s_t_many, self.reward_many, self.action_many, self.s_t_plus_1_many, self.terminal_many])
@@ -262,7 +261,7 @@ class Agent:
             print(self.q.get_shape().as_list())
             print("self.action_one_hot  shape")
             print(self.action_one_hot.get_shape().as_list())
-            q_acted                = tf.reduce_sum(self.q*self.action_one_hot, reduction_indices=1, name='q_acted')
+            q_acted = tf.reduce_sum(self.q*self.action_one_hot, reduction_indices=1, name='q_acted')
             print("q_acted shape")
             print(q_acted.get_shape().as_list())
             print("target_q_t shape")
@@ -344,7 +343,6 @@ class Agent:
                 #sorted_q = q.argsort()[i]
         return actions, np.array(qs)
 
-
     def update_target_q_network(self):
         for name in self.q_w.keys():
             self.target_q_w_assign_op[name].eval({self.target_q_w_input[name]: self.q_w[name].eval()})
@@ -366,7 +364,6 @@ class Agent:
                 color_hist.append(get_global_feature(image_data[i]))
 
         return np.stack(np.array(color_hist))
-        
 
     def get_state(self, raw_data, target_data, history=None):
         """ get state from the raw input data """
@@ -378,7 +375,6 @@ class Agent:
             data_lab = color.rgb2lab(raw_data[i]+0.5)
             mse = np.sqrt(np.sum(( target_lab - data_lab )**2, axis=2)).mean()/10.0
             scores.append([-mse])
-
 
         if self.use_deep_feature:
             if self.use_color_feature:
@@ -398,7 +394,6 @@ class Agent:
         else:
             color_features = self.get_hist(raw_data)
             return np.stack(np.array(color_features)), np.array(scores)
-
     
     def get_new_state(self, is_training=True, in_order=False, idx=-1, get_raw_images=False):
         """ start a new episode """
@@ -414,6 +409,7 @@ class Agent:
         else:
             state, score = self.get_state(state_raw, target_state_raw)
         return state, state_raw, score, target_state_raw, op_str, fn, raw_images, history
+
     def _load_images(self, offset, is_training,in_order=False,get_raw_images=False):
         if is_training:
             offset = random.randint(0, self.train_img_count-self.batch_size-1)
@@ -457,7 +453,6 @@ class Agent:
             raw_imgs.append(raw_imgs_target)
         fns = [os.path.basename(path) for path in img_list]
         return np.array(np.stack(imgs, axis=0)), np.array(np.stack(target_imgs, axis=0)), op_str, fns, raw_imgs
-        
 
     def act(self, actions, state_raw, target_state_raw, prev_score, is_training=True, step_count=0, history=None):
         images_after = []
@@ -583,15 +578,15 @@ class Agent:
                     os.mkdir(raw_dir_dir)
                 
                 if self.save_raw:
-                    raw_image_raw        = Image.fromarray(np.uint8(np.clip((raw_images_raw[i]+0.5)*255,0,255)))
-                    raw_image_retouched    = Image.fromarray(np.uint8(np.clip((retouched_raw_images[i]+0.5)*255,0,255)))
-                    raw_image_target    = Image.fromarray(np.uint8(np.clip((raw_images_target[i]+0.5)*255,0,255)))
+                    raw_image_raw = Image.fromarray(np.uint8(np.clip((raw_images_raw[i]+0.5)*255,0,255)))
+                    raw_image_retouched = Image.fromarray(np.uint8(np.clip((retouched_raw_images[i]+0.5)*255,0,255)))
+                    raw_image_target = Image.fromarray(np.uint8(np.clip((raw_images_target[i]+0.5)*255,0,255)))
                     
-                    target_lab         = color.rgb2lab(raw_images_target[i] + 0.5)
-                    retouched_lab     = color.rgb2lab(retouched_raw_images[i] + 0.5)
-                    initial_lab     = color.rgb2lab(raw_images_raw[i] + 0.5)
-                    initial_score    += - np.sqrt(np.sum(( target_lab - initial_lab )**2, axis=2)).mean()/10.0
-                    retouched_score    += - np.sqrt(np.sum(( target_lab - retouched_lab )**2, axis=2)).mean()/10.0
+                    target_lab = color.rgb2lab(raw_images_target[i] + 0.5)
+                    retouched_lab = color.rgb2lab(retouched_raw_images[i] + 0.5)
+                    initial_lab = color.rgb2lab(raw_images_raw[i] + 0.5)
+                    initial_score += - np.sqrt(np.sum(( target_lab - initial_lab )**2, axis=2)).mean()/10.0
+                    retouched_score += - np.sqrt(np.sum(( target_lab - retouched_lab )**2, axis=2)).mean()/10.0
                     try:
                         raw_image_raw.save(os.path.join(raw_dir_dir, "%s_raw.png" %(fn[i])))
                         raw_image_retouched.save(os.path.join(raw_dir_dir, "%s_retouched_%f_%s.png" %(fn[i], score_diff[i][0], actions_desc)))
@@ -600,14 +595,15 @@ class Agent:
                         print("exception occurred")
                         print(str(e))
                 else:
-                    target_lab         = color.rgb2lab(target_state_raw[i] + 0.5)
-                    retouched_lab     = color.rgb2lab(state_raw[i] + 0.5)
-                    initial_lab     = color.rgb2lab(state_raw_init[i] + 0.5)
-                    initial_score    += - np.sqrt(np.sum(( target_lab - initial_lab )**2, axis=2)).mean()/10.0
+                    target_lab = color.rgb2lab(target_state_raw[i] + 0.5)
+                    retouched_lab = color.rgb2lab(state_raw[i] + 0.5)
+                    initial_lab = color.rgb2lab(state_raw_init[i] + 0.5)
+                    initial_score += - np.sqrt(np.sum(( target_lab - initial_lab )**2, axis=2)).mean()/10.0
                     retouched_score    += - np.sqrt(np.sum(( target_lab - retouched_lab )**2, axis=2)).mean()/10.0
             except Exception as e:
                 print(str(e))
         return initial_score, retouched_score
+
 
 class DeepFeatureNetwork:
     def __init__(self, input_size, model_func, model_path, gpu_num):
@@ -620,13 +616,14 @@ class DeepFeatureNetwork:
     def get_feature(self, in_data):
         return sess.run(self.feature, feed_dict={self.input_tensor: in_data+0.5})
 
+
 def enqueue_samples(self, coord):
     repeat = 0
     state, state_raw, score, target_state_raw, _, _, _, history= self.get_new_state()
 
     step_count = 0
 
-    #for step in range(self.max_step):
+    # for step in range(self.max_step):
     while not coord.should_stop():
         if repeat>self.seq_len:
             repeat = 0
@@ -648,17 +645,18 @@ def enqueue_samples(self, coord):
         else:
             next_state, next_state_raw, reward, new_score, _ = self.act(action, state_raw, target_state_raw, score)
 
-
-        terminal = reward<=0
+        terminal = reward <= 0
         if np.sum(terminal)>self.batch_size/2:
-            repeat+=5
+            repeat += 5
         else:
-            repeat+=1
-        terminal= np.reshape(terminal, (self.batch_size, -1))
-        action    = np.reshape(action, (self.batch_size, -1))
+            repeat += 1
+        terminal = np.reshape(terminal, (self.batch_size, -1))
+        action = np.reshape(action, (self.batch_size, -1))
         
-        for i in range(self.enqueue_repeat):
-            sess.run(self.enqueue_op, feed_dict={self.s_t_single: state, self.s_t_plus_1_single: next_state, self.reward_single: reward, self.action_single: action, self.terminal_single: terminal})
+        for _ in range(self.enqueue_repeat):
+            sess.run(self.enqueue_op, feed_dict={self.s_t_single: state, self.s_t_plus_1_single: next_state,
+                                                 self.reward_single: reward, self.action_single: action,
+                                                 self.terminal_single: terminal})
 
         state_raw = next_state_raw
         state = next_state
@@ -666,10 +664,15 @@ def enqueue_samples(self, coord):
 
 
 if __name__ == '__main__':
+    ################################################################
+    # Arguments
+    ################################################################
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model_path")
+    parser.add_argument("--model-path")
     parser.add_argument("--prefix")
     parser.add_argument("--gpu", type=str, default='0', help="assign a gpu")
+    parser.add_argument("--data-dir", type=str, default='E:\work\image enhancement\data\hdr', help="Data directory")
+    parser.add_argument("--vgg16-path", type=str, default="./vgg16_pretrain.npz")
     args = parser.parse_args()
     model_path = args.model_path
     prefix = args.prefix
@@ -683,7 +686,7 @@ if __name__ == '__main__':
     else:
         os.makedirs('./test/'+prefix)
 
-    agent = Agent(prefix, args.gpu)
+    agent = Agent(prefix, args)
     config = tf.ConfigProto()
 
     with tf.Session(config=config) as sess:

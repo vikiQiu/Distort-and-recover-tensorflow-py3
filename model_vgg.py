@@ -3,8 +3,9 @@ import numpy as np
 
 
 def import_weight(file_path):
-	w = np.load(file_path)#.tolist()
+	w = np.load(file_path) #.tolist()
 	return w
+
 
 def model_vgg(data, model_path, gpu_num):
 	with tf.device("/gpu:" + gpu_num if gpu_num != '-1' else "/cpu:0"):

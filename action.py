@@ -2,12 +2,17 @@ from PIL import Image, ImageEnhance
 import skimage.color as color
 import numpy as np
 import time
-action_size = 12
 import math
 from action_set import *
 #from action_set_tf import *
+
+
+action_size = 12
+
+
 def PIL2array(img):
-	return np.array(img.getdata(), np.uint8).reshape(img.size[1], img.size[0], 3)
+    return np.array(img.getdata(), np.uint8).reshape(img.size[1], img.size[0], 3)
+
 
 def convert_K_to_RGB(colour_temperature):
     """
@@ -68,137 +73,138 @@ def convert_K_to_RGB(colour_temperature):
     
     return red, green, blue
 
-"""
-def take_action(image_np, action_idx, sess):
-	#image_pil = Image.fromarray(np.uint8(image_np))
-	#image_pil = Image.fromarray(np.uint8((image_np+0.5)*255))
-	# enhance contrast
-	return_np = None
-	if action_idx == 0:
-		return_np = contrast(image_np+0.5, 0.95,sess)
-	elif action_idx == 1:
-		return_np = contrast(image_np+0.5, 1.05,sess)
-	# enhance color
-	elif action_idx == 2:
-		return_np = color_saturation(image_np+0.5, 0.95,sess)
-	elif action_idx == 3:
-		return_np = color_saturation(image_np+0.5, 1.05,sess)
-	# color brightness
-	elif action_idx == 4:
-		return_np = brightness(image_np+0.5, 0.93,sess)
-	elif action_idx == 5:
-		return_np = brightness(image_np+0.5, 1.07,sess)
-	# color temperature : http://stackoverflow.com/questions/11884544/setting-color-temperature-for-a-given-image-like-in-photoshop
-	elif action_idx == 6:
-		r,g,b = 240, 240, 255 # around 6300K #convert_K_to_RGB(6000)
-		return_np = white_bal(image_np+0.5, r,g,b,sess)
-	elif action_idx == 7:
-		r,g,b = 270, 270, 255 # around 6300K #convert_K_to_RGB(6000)
-		return_np = white_bal(image_np+0.5, r,g,b,sess)
-	elif action_idx == 8:
-		r,g,b = 255, 240, 240 # around 6300K #convert_K_to_RGB(6000)
-		return_np = white_bal(image_np+0.5, r,g,b,sess)
-	elif action_idx == 9:
-		r,g,b = 255, 270, 270 # around 6300K #convert_K_to_RGB(6000)
-		return_np = white_bal(image_np+0.5, r,g,b,sess)
-	elif action_idx == 10:
-		r,g,b = 240, 255, 240 # around 6300K #convert_K_to_RGB(6000)
-		return_np = white_bal(image_np+0.5, r,g,b,sess)
-	elif action_idx == 11:
-		r,g,b = 270, 255, 270 # around 6300K #convert_K_to_RGB(6000)
-		return_np = white_bal(image_np+0.5, r,g,b,sess)
-	return return_np-0.5
-"""
+
+# def take_action(image_np, action_idx, sess):
+#     #image_pil = Image.fromarray(np.uint8(image_np))
+#     #image_pil = Image.fromarray(np.uint8((image_np+0.5)*255))
+#     # enhance contrast
+#     return_np = None
+#     if action_idx == 0:
+#         return_np = contrast(image_np+0.5, 0.95,sess)
+#     elif action_idx == 1:
+#         return_np = contrast(image_np+0.5, 1.05,sess)
+#     # enhance color
+#     elif action_idx == 2:
+#         return_np = color_saturation(image_np+0.5, 0.95,sess)
+#     elif action_idx == 3:
+#         return_np = color_saturation(image_np+0.5, 1.05,sess)
+#     # color brightness
+#     elif action_idx == 4:
+#         return_np = brightness(image_np+0.5, 0.93,sess)
+#     elif action_idx == 5:
+#         return_np = brightness(image_np+0.5, 1.07,sess)
+#     # color temperature : http://stackoverflow.com/questions/11884544/setting-color-temperature-for-a-given-image-like-in-photoshop
+#     elif action_idx == 6:
+#         r,g,b = 240, 240, 255 # around 6300K #convert_K_to_RGB(6000)
+#         return_np = white_bal(image_np+0.5, r,g,b,sess)
+#     elif action_idx == 7:
+#         r,g,b = 270, 270, 255 # around 6300K #convert_K_to_RGB(6000)
+#         return_np = white_bal(image_np+0.5, r,g,b,sess)
+#     elif action_idx == 8:
+#         r,g,b = 255, 240, 240 # around 6300K #convert_K_to_RGB(6000)
+#         return_np = white_bal(image_np+0.5, r,g,b,sess)
+#     elif action_idx == 9:
+#         r,g,b = 255, 270, 270 # around 6300K #convert_K_to_RGB(6000)
+#         return_np = white_bal(image_np+0.5, r,g,b,sess)
+#     elif action_idx == 10:
+#         r,g,b = 240, 255, 240 # around 6300K #convert_K_to_RGB(6000)
+#         return_np = white_bal(image_np+0.5, r,g,b,sess)
+#     elif action_idx == 11:
+#         r,g,b = 270, 255, 270 # around 6300K #convert_K_to_RGB(6000)
+#         return_np = white_bal(image_np+0.5, r,g,b,sess)
+#     return return_np-0.5
+
+
 def take_action(image_np, action_idx):
-	#image_pil = Image.fromarray(np.uint8(image_np))
-	#image_pil = Image.fromarray(np.uint8((image_np+0.5)*255))
-	# enhance contrast
-	return_np = None
-	if action_idx == 0:
-		return_np = contrast(image_np+0.5, 0.95)
-	elif action_idx == 1:
-		return_np = contrast(image_np+0.5, 1.05)
-	# enhance color
-	elif action_idx == 2:
-		return_np = color_saturation(image_np+0.5, 0.95)
-	elif action_idx == 3:
-		return_np = color_saturation(image_np+0.5, 1.05)
-	# color brightness
-	elif action_idx == 4:
-		return_np = brightness(image_np+0.5, 0.93)
-	elif action_idx == 5:
-		return_np = brightness(image_np+0.5, 1.07)
-	# color temperature : http://stackoverflow.com/questions/11884544/setting-color-temperature-for-a-given-image-like-in-photoshop
-	elif action_idx == 6:
-		r,g,b = 240, 240, 255 # around 6300K #convert_K_to_RGB(6000)
-		return_np = white_bal(image_np+0.5, r,g,b)
-	elif action_idx == 7:
-		r,g,b = 270, 270, 255 # around 6300K #convert_K_to_RGB(6000)
-		return_np = white_bal(image_np+0.5, r,g,b)
-	elif action_idx == 8:
-		r,g,b = 255, 240, 240 # around 6300K #convert_K_to_RGB(6000)
-		return_np = white_bal(image_np+0.5, r,g,b)
-	elif action_idx == 9:
-		r,g,b = 255, 270, 270 # around 6300K #convert_K_to_RGB(6000)
-		return_np = white_bal(image_np+0.5, r,g,b)
-	elif action_idx == 10:
-		r,g,b = 240, 255, 240 # around 6300K #convert_K_to_RGB(6000)
-		return_np = white_bal(image_np+0.5, r,g,b)
-	elif action_idx == 11:
-		r,g,b = 270, 255, 270 # around 6300K #convert_K_to_RGB(6000)
-		return_np = white_bal(image_np+0.5, r,g,b)
-	elif action_idx==12:
-		image_lab = color.rgb2lab(image_np+0.5)
-		image_lab = L_sigmoid_low(image_lab, 4)
-		return_np = color.lab2rgb(image_lab)
-	elif action_idx==13:
-		image_lab = color.rgb2lab(image_np+0.5)
-		image_lab = L_sigmoid_high(image_lab, 4)
-		return_np = color.lab2rgb(image_lab)
-	elif action_idx==14:
-		image_lab = color.rgb2lab(image_np+0.5)
-		image_lab = L_inv_sigmoid_low(image_lab, 4)
-		return_np = color.lab2rgb(image_lab)
-	elif action_idx==15:
-		image_lab = color.rgb2lab(image_np+0.5)
-		image_lab = L_inv_sigmoid_high(image_lab, 4)
-		return_np = color.lab2rgb(image_lab)
-	elif action_idx==16:
-		image_rgb = image_np+0.5
-		return_np = R_sigmoid_low(image_rgb, 4)
-	elif action_idx==17:
-		image_rgb = image_np+0.5
-		return_np = R_sigmoid_high(image_rgb, 4)
-	elif action_idx==18:
-		image_rgb = image_np+0.5
-		return_np = R_inv_sigmoid_low(image_rgb, 4)
-	elif action_idx==19:
-		image_rgb = image_np+0.5
-		return_np = R_inv_sigmoid_high(image_rgb, 4)
-	elif action_idx==20:
-		image_rgb = image_np+0.5
-		return_np = G_sigmoid_low(image_rgb, 4)
-	elif action_idx==21:
-		image_rgb = image_np+0.5
-		return_np = G_sigmoid_high(image_rgb, 4)
-	elif action_idx==22:
-		image_rgb = image_np+0.5
-		return_np = G_inv_sigmoid_low(image_rgb, 4)
-	elif action_idx==23:
-		image_rgb = image_np+0.5
-		return_np = G_inv_sigmoid_high(image_rgb, 4)
-	elif action_idx==24:
-		image_rgb = image_np+0.5
-		return_np = B_sigmoid_low(image_rgb, 4)
-	elif action_idx==25:
-		image_rgb = image_np+0.5
-		return_np = B_sigmoid_high(image_rgb, 4)
-	elif action_idx==26:
-		image_rgb = image_np+0.5
-		return_np = B_inv_sigmoid_low(image_rgb, 4)
-	elif action_idx==27:
-		image_rgb = image_np+0.5
-		return_np = B_inv_sigmoid_high(image_rgb, 4)
-	else:
-		print("error")
-	return return_np-0.5
+    # image_pil = Image.fromarray(np.uint8(image_np))
+    # image_pil = Image.fromarray(np.uint8((image_np+0.5)*255))
+    # enhance contrast
+    return_np = None
+    if action_idx == 0:
+        return_np = contrast(image_np+0.5, 0.95)
+    elif action_idx == 1:
+        return_np = contrast(image_np+0.5, 1.05)
+    # enhance color
+    elif action_idx == 2:
+        return_np = color_saturation(image_np+0.5, 0.95)
+    elif action_idx == 3:
+        return_np = color_saturation(image_np+0.5, 1.05)
+    # color brightness
+    elif action_idx == 4:
+        return_np = brightness(image_np+0.5, 0.93)
+    elif action_idx == 5:
+        return_np = brightness(image_np+0.5, 1.07)
+    # color temperature : http://stackoverflow.com/questions/11884544/setting-color-temperature-for-a-given-image-like-in-photoshop
+    elif action_idx == 6:
+        r,g,b = 240, 240, 255 # around 6300K #convert_K_to_RGB(6000)
+        return_np = white_bal(image_np+0.5, r,g,b)
+    elif action_idx == 7:
+        r,g,b = 270, 270, 255 # around 6300K #convert_K_to_RGB(6000)
+        return_np = white_bal(image_np+0.5, r,g,b)
+    elif action_idx == 8:
+        r,g,b = 255, 240, 240 # around 6300K #convert_K_to_RGB(6000)
+        return_np = white_bal(image_np+0.5, r,g,b)
+    elif action_idx == 9:
+        r,g,b = 255, 270, 270 # around 6300K #convert_K_to_RGB(6000)
+        return_np = white_bal(image_np+0.5, r,g,b)
+    elif action_idx == 10:
+        r,g,b = 240, 255, 240 # around 6300K #convert_K_to_RGB(6000)
+        return_np = white_bal(image_np+0.5, r,g,b)
+    elif action_idx == 11:
+        r,g,b = 270, 255, 270 # around 6300K #convert_K_to_RGB(6000)
+        return_np = white_bal(image_np+0.5, r,g,b)
+    elif action_idx==12:
+        image_lab = color.rgb2lab(image_np+0.5)
+        image_lab = L_sigmoid_low(image_lab, 4)
+        return_np = color.lab2rgb(image_lab)
+    elif action_idx==13:
+        image_lab = color.rgb2lab(image_np+0.5)
+        image_lab = L_sigmoid_high(image_lab, 4)
+        return_np = color.lab2rgb(image_lab)
+    elif action_idx==14:
+        image_lab = color.rgb2lab(image_np+0.5)
+        image_lab = L_inv_sigmoid_low(image_lab, 4)
+        return_np = color.lab2rgb(image_lab)
+    elif action_idx==15:
+        image_lab = color.rgb2lab(image_np+0.5)
+        image_lab = L_inv_sigmoid_high(image_lab, 4)
+        return_np = color.lab2rgb(image_lab)
+    elif action_idx==16:
+        image_rgb = image_np+0.5
+        return_np = R_sigmoid_low(image_rgb, 4)
+    elif action_idx==17:
+        image_rgb = image_np+0.5
+        return_np = R_sigmoid_high(image_rgb, 4)
+    elif action_idx==18:
+        image_rgb = image_np+0.5
+        return_np = R_inv_sigmoid_low(image_rgb, 4)
+    elif action_idx==19:
+        image_rgb = image_np+0.5
+        return_np = R_inv_sigmoid_high(image_rgb, 4)
+    elif action_idx==20:
+        image_rgb = image_np+0.5
+        return_np = G_sigmoid_low(image_rgb, 4)
+    elif action_idx==21:
+        image_rgb = image_np+0.5
+        return_np = G_sigmoid_high(image_rgb, 4)
+    elif action_idx==22:
+        image_rgb = image_np+0.5
+        return_np = G_inv_sigmoid_low(image_rgb, 4)
+    elif action_idx==23:
+        image_rgb = image_np+0.5
+        return_np = G_inv_sigmoid_high(image_rgb, 4)
+    elif action_idx==24:
+        image_rgb = image_np+0.5
+        return_np = B_sigmoid_low(image_rgb, 4)
+    elif action_idx==25:
+        image_rgb = image_np+0.5
+        return_np = B_sigmoid_high(image_rgb, 4)
+    elif action_idx==26:
+        image_rgb = image_np+0.5
+        return_np = B_inv_sigmoid_low(image_rgb, 4)
+    elif action_idx==27:
+        image_rgb = image_np+0.5
+        return_np = B_inv_sigmoid_high(image_rgb, 4)
+    else:
+        print("error")
+    return return_np-0.5
