@@ -50,7 +50,7 @@ class Agent:
 
         self.w = {}
         self.batch_size = 4
-        self.max_step = 3000000
+        self.max_step = 30
         self.seq_len = 50
         self.feature_length = self.deep_feature_len + self.color_feature_len + self.use_history*self.seq_len*action_size
         
@@ -668,7 +668,7 @@ if __name__ == '__main__':
     # Arguments
     ################################################################
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model-path")
+    parser.add_argument("--model-path", type=str)
     parser.add_argument("--prefix")
     parser.add_argument("--gpu", type=str, default='0', help="assign a gpu")
     parser.add_argument("--data-dir", type=str, default='E:\work\image enhancement\data\hdr', help="Data directory")
