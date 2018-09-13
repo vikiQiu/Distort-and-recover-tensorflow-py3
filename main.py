@@ -50,7 +50,7 @@ class Agent:
 
         self.w = {}
         self.batch_size = 4
-        self.max_step = 30
+        self.max_step = 300000
         self.seq_len = 50
         self.feature_length = self.deep_feature_len + self.color_feature_len + self.use_history*self.seq_len*action_size
         
@@ -689,9 +689,9 @@ if __name__ == '__main__':
 
     agent = Agent(prefix, args)
     config = tf.ConfigProto()
+    config.gpu_options.allow_growth = True
 
-    sess = tf.Session(config=config)
-    with sess.as_default():
+    with tf.Session(config=config) as sess:
         agent.init_preprocessor()
         agent.init_model()
         agent.init_img_list()
@@ -705,4 +705,3 @@ if __name__ == '__main__':
             print("start training with prefix {}".format(prefix))
             agent.train_with_queue()
 
-    sess.close()
