@@ -50,7 +50,7 @@ class Agent:
 
         self.w = {}
         self.batch_size = 4
-        self.max_step = 300000
+        self.max_step = 30000
         self.seq_len = 50
         self.feature_length = self.deep_feature_len + self.color_feature_len + self.use_history*self.seq_len*action_size
         
@@ -72,7 +72,7 @@ class Agent:
         self.min_reward = -0.5
         self.memory_size = 5000
         self.target_q_update_step = 1000
-        self.test_step = 160000
+        self.test_step = 10000
         self.learning_rate_minimum = 0.00000001
         self.learning_rate = 0.00001
         self.learning_rate_decay_step = 5000
@@ -152,23 +152,31 @@ class Agent:
                 print("do dry test")
                 self.test(idx=0)
 
+            print(self.step)
+
             self.q_learning_minibatch()
             if self.step % self.target_q_update_step == self.target_q_update_step-1:
-                print("update")
+                print("Step %d: Target Q updating ... " % self.step)
                 self.update_target_q_network()
 
             if self.step%self.save_interval == self.save_interval-1:
+                print("Step %d: Saving model ... " % self.step)
                 self.save_model(self.step+1)
+
             if self.step%self.test_step == self.test_step-1:
                 init_scores = []
                 final_scores = []
+                print("Step %d: ############ Testing ... #############" % self.step)
                 for i in range(self.test_count):
                     #init_score, final_score = self.test()
                     init_score, final_score = self.test(in_order=True, idx=i)
                     init_scores.append(init_score)
                     final_scores.append(final_score)
+                print('Average init scores = %.6f; average final scores = %.6f'
+                      % (np.mean(init_scores), np.mean(final_scores)))
                 init_scores = [str(v) for v in init_scores]
                 final_scores = [str(v) for v in final_scores]
+
                 with open('./test/'+self.prefix+'/test.txt', 'a') as f:
                     f.write("step %d\n"%self.step)
                     f.write(" ".join(init_scores)+"\n")
