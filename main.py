@@ -87,7 +87,7 @@ class Agent:
 
         # MIT5K C
         self.data_dir = args.data_dir
-        self.test_count = 63
+        self.test_count = 4 # 63
 
         self.train_dir = os.path.join(self.data_dir, 'train')
         self.test_dir = os.path.join(self.data_dir, 'test')
@@ -178,6 +178,8 @@ class Agent:
                 for i in range(self.test_count):
                     #init_score, final_score = self.test()
                     init_score, final_score = self.test(in_order=True, idx=i)
+                    print('[Testing %d/%d] init score = %.5f; final score = %.5f'
+                          % (i, self.test_count, init_score, final_score))
                     init_scores.append(init_score)
                     final_scores.append(final_score)
                 print('Average init scores = %.6f; average final scores = %.6f'
