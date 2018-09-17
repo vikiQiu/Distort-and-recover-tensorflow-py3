@@ -2,6 +2,7 @@ import threading
 import tensorflow as tf
 import numpy as np
 import random, sys
+import shutil
 from PIL import Image, ImageEnhance
 from scipy.misc import imread, imresize
 import glob, pickle
@@ -151,8 +152,6 @@ class Agent:
                 # dry test
                 print("do dry test")
                 self.test(idx=0)
-
-            print(self.step)
 
             self.q_learning_minibatch()
             if self.step % self.target_q_update_step == self.target_q_update_step-1:
@@ -691,6 +690,8 @@ if __name__ == '__main__':
         sys.exit(1)
     elif os.path.exists('./test/'+prefix):
         print("duplicated prefix")
+        shutil.rmtree('./test/'+prefix)
+        os.makedirs('./test/' + prefix)
         # sys.exit(1)
     else:
         os.makedirs('./test/'+prefix)
