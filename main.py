@@ -3,8 +3,9 @@ import tensorflow as tf
 import numpy as np
 import random, sys
 import shutil
+import skimage
 from PIL import Image, ImageEnhance
-from scipy.misc import imread, imresize
+from skimage import transform, io
 import glob, pickle
 from random import shuffle
 from model_vgg import model_vgg
@@ -142,10 +143,10 @@ class Agent:
         self.step=0
         # QUEUE loading setup
         self.coord = tf.train.Coordinator()
-        for i in range(self.num_thread):
-            print('[Thread %d/%d] enqueue samples' % i, self.num_thread)
-            t = threading.Thread(target=enqueue_samples, args=(self, self.coord))
-            t.start()
+        # for i in range(self.num_thread):
+        #     print('[Thread %d/%d] enqueue samples' % (i, self.num_thread))
+        #     t = threading.Thread(target=enqueue_samples, args=(self, self.coord))
+        #     t.start()
 
         # RUN queue update
         for self.step in tqdm(range(0, self.max_step), ncols=70, initial=0):
@@ -441,7 +442,9 @@ class Agent:
         raw_imgs_raw = []
         raw_imgs_target = []
         for img_path in img_list:
-            imgs.append(imresize(imread(img_path, mode='RGB'), (224,224))/255.0-0.5)
+            print(img_path)
+            print(io.imread(img_path, mode='RGB'))
+            imgs.append(transform.resize(skimage.io.imread(img_path, mode='RGB'), (224,224))/255.0-0.5)
             target_path = os.path.join(os.path.join(os.path.dirname(os.path.dirname(img_path)), "target"),
                                        os.path.basename(img_path))
             if "__" in os.path.basename(img_path):
@@ -505,9 +508,12 @@ class Agent:
             test_result_dir = "test/"+self.prefix+"/step_%010d" % self.step
         if not os.path.exists(test_result_dir):
             os.mkdir(test_result_dir)
+        print('[Testing] directory = %s' % test_result_dir)
+
         state, state_raw, score_initial, target_state_raw,op_strs, fn, raw_images, history = self.get_new_state(is_training=False, in_order=in_order, idx=idx, get_raw_images=True)
         score = score_initial.copy()
         state_raw_init = state_raw.copy()
+        print(raw_images)
         raw_images_raw = raw_images[0]
         raw_images_target = raw_images[1]
         retouched_raw_images = [item.copy() for item in raw_images_raw]
@@ -680,9 +686,9 @@ if __name__ == '__main__':
     parser.add_argument("--model-path", type=str)
     parser.add_argument("--prefix")
     parser.add_argument("--gpu", type=str, default='0', help="assign a gpu")
-    parser.add_argument("--data-dir", type=str, default='E:\work\image enhancement\data\hdr', help="Data directory")
+    parser.add_argument("--data-dir", type=str, default='E:\work\image enhancement\data\mit5k', help="Data directory")
     parser.add_argument("--vgg16-path", type=str, default="./vgg16_pretrain.npz")
-    parser.add_argument("--batch-size", type=int, default=128, help="Batch size.")
+    parser.add_argument("--batch-size", type=int, default=4, help="Batch size.")
     args = parser.parse_args()
     model_path = args.model_path
     prefix = args.prefix
