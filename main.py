@@ -118,8 +118,14 @@ class Agent:
             self.train_img_list = self.img_list['train_img_list']
             self.test_img_list = self.img_list['test_img_list']
         else:
-            self.train_img_list = glob.glob(os.path.join(self.train_dir, "raw/*.jpg"))
-            self.test_img_list = glob.glob(os.path.join(self.test_dir, "raw/*.jpg"))
+            train_raw_dir = os.path.join(self.train_dir, 'raw')
+            test_raw_dir = os.path.join(self.test_dir, 'raw')
+            self.train_img_list = [os.path.join(train_raw_dir, x) for x in os.listdir(train_raw_dir) if x.endswith('.jpg')]
+            self.test_img_list = [os.path.join(test_raw_dir, x) for x in os.listdir(test_raw_dir) if x.endswith('.jpg')]
+            print('train img list:', self.train_img_list[:10])
+            print('test img list:', self.test_img_list[:10])
+            # self.train_img_list = glob.glob(os.path.join(self.train_dir, "raw/*.jpg"))
+            # self.test_img_list = glob.glob(os.path.join(self.test_dir, "raw/*.jpg"))
             self.img_list = {'train_img_list': self.train_img_list, 'test_img_list': self.test_img_list }
 
             with open('./test/'+self.prefix+'/img_list.pkl', 'wb') as f:
@@ -143,10 +149,10 @@ class Agent:
         self.step=0
         # QUEUE loading setup
         self.coord = tf.train.Coordinator()
-        # for i in range(self.num_thread):
-        #     print('[Thread %d/%d] enqueue samples' % (i, self.num_thread))
-        #     t = threading.Thread(target=enqueue_samples, args=(self, self.coord))
-        #     t.start()
+        for i in range(self.num_thread):
+            print('[Thread %d/%d] enqueue samples' % (i, self.num_thread))
+            t = threading.Thread(target=enqueue_samples, args=(self, self.coord))
+            t.start()
 
         # RUN queue update
         for self.step in tqdm(range(0, self.max_step), ncols=70, initial=0):
@@ -442,20 +448,22 @@ class Agent:
         raw_imgs_raw = []
         raw_imgs_target = []
         for img_path in img_list:
-            print(img_path)
-            print(io.imread(img_path, mode='RGB'))
-            imgs.append(transform.resize(skimage.io.imread(img_path, mode='RGB'), (224,224))/255.0-0.5)
             target_path = os.path.join(os.path.join(os.path.dirname(os.path.dirname(img_path)), "target"),
                                        os.path.basename(img_path))
+            print(img_path)
+            print(io.imread(img_path, mode='RGB').shape)
+            print(target_path)
+
+            imgs.append(transform.resize(io.imread(img_path, mode='RGB'), (224,224))-0.5)
             if "__" in os.path.basename(img_path):
                 op_str.append(os.path.basename(img_path).split("__")[1])
             else:
                 op_str.append("_")
-            target_imgs.append(imresize(imread(target_path, mode='RGB'), (224,224))/255.0-0.5)
+            target_imgs.append(transform.resize(io.imread(target_path, mode='RGB'), (224,224))-0.5)
 
             if get_raw_images:
-                raw_imgs_raw.append(imread(img_path, mode='RGB')/255.0-0.5)
-                raw_imgs_target.append(imread(target_path, mode='RGB')/255.0-0.5)
+                raw_imgs_raw.append(io.imread(img_path, mode='RGB')-0.5)
+                raw_imgs_target.append(io.imread(target_path, mode='RGB')-0.5)
         if len(raw_imgs_raw)>0:
             for raw in raw_imgs_raw:
                 if self.logging:
@@ -513,7 +521,7 @@ class Agent:
         state, state_raw, score_initial, target_state_raw,op_strs, fn, raw_images, history = self.get_new_state(is_training=False, in_order=in_order, idx=idx, get_raw_images=True)
         score = score_initial.copy()
         state_raw_init = state_raw.copy()
-        print(raw_images)
+        # print(raw_images)
         raw_images_raw = raw_images[0]
         raw_images_target = raw_images[1]
         retouched_raw_images = [item.copy() for item in raw_images_raw]
