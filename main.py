@@ -158,8 +158,9 @@ class Agent:
         for self.step in tqdm(range(0, self.max_step), ncols=70, initial=0):
             if self.step==0:
                 # dry test
-                print("do dry test")
+                print("############## do dry test ###############")
                 self.test(idx=0)
+                print("############## dry test finished #############")
 
             self.q_learning_minibatch()
             if self.step % self.target_q_update_step == self.target_q_update_step-1:
@@ -447,12 +448,13 @@ class Agent:
         raw_imgs = []
         raw_imgs_raw = []
         raw_imgs_target = []
+        print('Loading images')
         for img_path in img_list:
             target_path = os.path.join(os.path.join(os.path.dirname(os.path.dirname(img_path)), "target"),
                                        os.path.basename(img_path))
-            print(img_path)
-            print(io.imread(img_path, mode='RGB').shape)
-            print(target_path)
+            # print(img_path)
+            # print(io.imread(img_path, mode='RGB').shape)
+            # print(target_path)
 
             imgs.append(transform.resize(io.imread(img_path, mode='RGB'), (224,224))-0.5)
             if "__" in os.path.basename(img_path):
