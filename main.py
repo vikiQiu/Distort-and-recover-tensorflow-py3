@@ -50,7 +50,7 @@ class Agent:
             self.color_feature_len = 8000
 
         self.w = {}
-        self.batch_size = 4
+        self.batch_size = args.batch_size
         self.max_step = 30000
         self.seq_len = 50
         self.feature_length = self.deep_feature_len + self.color_feature_len + self.use_history*self.seq_len*action_size
@@ -143,6 +143,7 @@ class Agent:
         # QUEUE loading setup
         self.coord = tf.train.Coordinator()
         for i in range(self.num_thread):
+            print('[Thread %d/%d] enqueue samples' % i, self.num_thread)
             t = threading.Thread(target=enqueue_samples, args=(self, self.coord))
             t.start()
 
@@ -681,6 +682,7 @@ if __name__ == '__main__':
     parser.add_argument("--gpu", type=str, default='0', help="assign a gpu")
     parser.add_argument("--data-dir", type=str, default='E:\work\image enhancement\data\hdr', help="Data directory")
     parser.add_argument("--vgg16-path", type=str, default="./vgg16_pretrain.npz")
+    parser.add_argument("--batch-size", type=int, default=128, help="Batch size.")
     args = parser.parse_args()
     model_path = args.model_path
     prefix = args.prefix
