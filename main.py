@@ -180,7 +180,8 @@ class Agent:
                 print("Step %d: ############ Testing ... #############" % self.step)
                 for i in range(self.test_count):
                     #init_score, final_score = self.test()
-                    init_score, final_score = self.test(in_order=True, idx=i)
+                    init_score, final_score = self.test(in_order=True, idx=i,
+                                                        save_raw=(self.step % (self.test_step*5) == 0))
                     print('[Testing %d/%d] init score = %.5f; final score = %.5f'
                           % (i, self.test_count, init_score, final_score))
                     init_scores.append(init_score)
@@ -516,7 +517,7 @@ class Agent:
                 images_after.append(take_action(state_raw[i], action_idx))
         return images_after
 
-    def test(self, is_batch_test=False, use_target_q=False, in_order=False, idx=-1):
+    def test(self, is_batch_test=False, use_target_q=False, in_order=False, idx=-1, save_raw=False):
         if is_batch_test:
             test_result_dir = "test/"+self.prefix+"/batch_test_%s" % self.prefix
         else:
@@ -611,7 +612,7 @@ class Agent:
                 if not os.path.exists(raw_dir_dir):
                     os.mkdir(raw_dir_dir)
                 
-                if self.save_raw and i < 4:
+                if save_raw and i < 4:
                     raw_image_raw = Image.fromarray(np.uint8(np.clip((raw_images_raw[i]+0.5)*255,0,255)))
                     raw_image_retouched = Image.fromarray(np.uint8(np.clip((retouched_raw_images[i]+0.5)*255,0,255)))
                     raw_image_target = Image.fromarray(np.uint8(np.clip((raw_images_target[i]+0.5)*255,0,255)))
