@@ -5,7 +5,7 @@ import random, sys
 import shutil
 import skimage
 from PIL import Image, ImageEnhance
-from skimage import transform, io
+from skimage import transform, io, img_as_float
 import glob, pickle
 from random import shuffle
 from model_vgg import model_vgg
@@ -53,8 +53,8 @@ class Agent:
 
         self.w = {}
         self.batch_size = args.batch_size
-        self.max_step = 30000
-        self.seq_len = 5
+        self.max_step = 3000000
+        self.seq_len = args.seq_len
         self.feature_length = self.deep_feature_len + self.color_feature_len + self.use_history*self.seq_len*action_size
         
         self.q = None
@@ -75,7 +75,7 @@ class Agent:
         self.min_reward = -0.5
         self.memory_size = 5000
         self.target_q_update_step = 1000
-        self.test_step = 1000
+        self.test_step = args.test_step
         self.learning_rate_minimum = 0.00000001
         self.learning_rate = 0.00001
         self.learning_rate_decay_step = 5000
@@ -162,7 +162,7 @@ class Agent:
                 print("############## do dry test ###############")
                 self.test(idx=0)
                 print("############## dry test finished #############")
-            if self.step % 20 == 0:
+            if self.step % 1000 == 0:
                 print('############## Now is step %d ###############' % self.step)
 
             self.q_learning_minibatch()
@@ -453,7 +453,7 @@ class Agent:
         raw_imgs = []
         raw_imgs_raw = []
         raw_imgs_target = []
-        print('Loading images')
+        # print('Loading images')
         for img_path in img_list:
             target_path = os.path.join(os.path.join(os.path.dirname(os.path.dirname(img_path)), "target"),
                                        os.path.basename(img_path))
@@ -469,8 +469,8 @@ class Agent:
             target_imgs.append(transform.resize(io.imread(target_path, mode='RGB'), (224,224))-0.5)
 
             if get_raw_images:
-                raw_imgs_raw.append(io.imread(img_path, mode='RGB')-0.5)
-                raw_imgs_target.append(io.imread(target_path, mode='RGB')-0.5)
+                raw_imgs_raw.append(img_as_float(io.imread(img_path, mode='RGB'))-0.5)
+                raw_imgs_target.append(img_as_float(io.imread(target_path, mode='RGB'))-0.5)
         if len(raw_imgs_raw)>0:
             for raw in raw_imgs_raw:
                 if self.logging:
@@ -538,7 +538,7 @@ class Agent:
         for i in range(self.seq_len):
             action, q_val = self.predict(state, is_training=False, use_target_q=use_target_q)
             if self.logging or self.test_logging:
-                print("[Testing] Retoch step %d: q_val" % i, q_val)
+                print("[Testing] Retoch step %d" % i)
             all_stop = True
             for j in range(self.batch_size):
                 if q_val[j][action[j]] <= 0:
@@ -564,7 +564,8 @@ class Agent:
 
             # to save raw image.. in raw resolution...
             if self.save_raw:
-                retouched_raw_images = self.act_on_raw_img(action, retouched_raw_images)
+                if i < 4:
+                    retouched_raw_images = self.act_on_raw_img(action, retouched_raw_images)
 
         if self.logging:
             print(actions)
@@ -610,8 +611,7 @@ class Agent:
                 if not os.path.exists(raw_dir_dir):
                     os.mkdir(raw_dir_dir)
                 
-                if self.save_raw:
-                    print('Saving raw images with shape:', raw_images_raw[i].shape)
+                if self.save_raw and i < 4:
                     raw_image_raw = Image.fromarray(np.uint8(np.clip((raw_images_raw[i]+0.5)*255,0,255)))
                     raw_image_retouched = Image.fromarray(np.uint8(np.clip((retouched_raw_images[i]+0.5)*255,0,255)))
                     raw_image_target = Image.fromarray(np.uint8(np.clip((raw_images_target[i]+0.5)*255,0,255)))
@@ -708,6 +708,8 @@ if __name__ == '__main__':
     parser.add_argument("--data-dir", type=str, default='E:\work\image enhancement\data\mit5k', help="Data directory")
     parser.add_argument("--vgg16-path", type=str, default="./vgg16_pretrain.npz")
     parser.add_argument("--batch-size", type=int, default=4, help="Batch size.")
+    parser.add_argument("--seq-len", type=int, default=50, help="The number of retouch actions to take.")
+    parser.add_argument("--test-step", type=int, default=160000, help="Test Step.")
     args = parser.parse_args()
     model_path = args.model_path
     prefix = args.prefix

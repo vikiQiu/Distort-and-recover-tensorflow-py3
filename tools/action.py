@@ -72,7 +72,7 @@ def take_action(image_np, action_idx):
                		0.0, 0.0, b / 255.0, 0.0 )
 		image_enh = image_pil.convert('RGB', matrix)
 	else:
-		print "error"
+		print("error")
 	
 	#random_id = str(random.randrange(100000))
 	#image_pil.save("%s_%d_raw.jpg" % (random_id, action_idx))
