@@ -28,6 +28,7 @@ class Agent:
         self.save_raw = True
         self.finetune = False
         self.logging = False
+        self.test_logging = True
         self.use_history = True
         self.use_batch_norm = False
         self.deep_feature_model_path = args.vgg16_path
@@ -53,7 +54,7 @@ class Agent:
         self.w = {}
         self.batch_size = args.batch_size
         self.max_step = 30000
-        self.seq_len = 50
+        self.seq_len = 5
         self.feature_length = self.deep_feature_len + self.color_feature_len + self.use_history*self.seq_len*action_size
         
         self.q = None
@@ -74,7 +75,7 @@ class Agent:
         self.min_reward = -0.5
         self.memory_size = 5000
         self.target_q_update_step = 1000
-        self.test_step = 10000
+        self.test_step = 1000
         self.learning_rate_minimum = 0.00000001
         self.learning_rate = 0.00001
         self.learning_rate_decay_step = 5000
@@ -161,6 +162,8 @@ class Agent:
                 print("############## do dry test ###############")
                 self.test(idx=0)
                 print("############## dry test finished #############")
+            if self.step % 20 == 0:
+                print('############## Now is step %d ###############' % self.step)
 
             self.q_learning_minibatch()
             if self.step % self.target_q_update_step == self.target_q_update_step-1:
@@ -530,10 +533,12 @@ class Agent:
         raw_images_target = raw_images[1]
         retouched_raw_images = [item.copy() for item in raw_images_raw]
         actions = []
+
+        print('[Testing] Retouching images ... #####################')
         for i in range(self.seq_len):
             action, q_val = self.predict(state, is_training=False, use_target_q=use_target_q)
-            if self.logging:
-                print("q_val", q_val)
+            if self.logging or self.test_logging:
+                print("[Testing] Retoch step %d: q_val" % i, q_val)
             all_stop = True
             for j in range(self.batch_size):
                 if q_val[j][action[j]] <= 0:
@@ -542,7 +547,7 @@ class Agent:
                 else:
                     all_stop = all_stop and False
             if all_stop:
-                print("all negative, stop")
+                print("all negative, stop. %d retouch step finished" % i)
                 break
             next_state, next_state_raw, r, new_score, history = self.act(action, state_raw, target_state_raw, score, is_training=False, history=history)
             #next_state, next_state_raw, reward, new_score = self.act(action, state_raw, target_state_raw, score)
@@ -566,7 +571,7 @@ class Agent:
 
         state, final_score = self.get_state(state_raw, target_state_raw, history=history)
         score_diff = final_score - score_initial
-        if self.logging:
+        if self.logging or self.test_logging:
             print("")
             print("final_score:\t", final_score)
             print("original_score:\t", score_initial)
@@ -577,6 +582,7 @@ class Agent:
 
         initial_score = 0 
         retouched_score = 0
+        print('[Testing] Storing retouched images ... #################')
         for i in range(state_raw.shape[0]):
             try:
                 actions_str = []
@@ -588,7 +594,7 @@ class Agent:
                     random_id = random.randrange(999999999)
                 else:
                     random_id = idx
-                with open(os.path.join(test_result_dir, '%s.log'%fn[i]), 'wb') as f:
+                with open(os.path.join(test_result_dir, '%s.log'%fn[i]), 'w') as f:
                     f.write("%s_%f_%s.png\n" % (fn[i], score_diff[i][0], actions_desc))
                 image = Image.fromarray(np.uint8(np.clip((state_raw[i]+0.5)*255, 0, 255)))
                 image.save(os.path.join(test_result_dir, "%s_%f_retouched.png" % (fn[i], score_diff[i][0])))
@@ -605,6 +611,7 @@ class Agent:
                     os.mkdir(raw_dir_dir)
                 
                 if self.save_raw:
+                    print('Saving raw images with shape:', raw_images_raw[i].shape)
                     raw_image_raw = Image.fromarray(np.uint8(np.clip((raw_images_raw[i]+0.5)*255,0,255)))
                     raw_image_retouched = Image.fromarray(np.uint8(np.clip((retouched_raw_images[i]+0.5)*255,0,255)))
                     raw_image_target = Image.fromarray(np.uint8(np.clip((raw_images_target[i]+0.5)*255,0,255)))
@@ -619,7 +626,7 @@ class Agent:
                         raw_image_retouched.save(os.path.join(raw_dir_dir, "%s_retouched_%f_%s.png" %(fn[i], score_diff[i][0], actions_desc)))
                         raw_image_target.save(os.path.join(raw_dir_dir, "%s_target.png" %(fn[i])))
                     except Exception as e:
-                        print("exception occurred")
+                        print("[!!!! TESTING ERROR] raw image saving problem: exception occurred")
                         print(str(e))
                 else:
                     target_lab = color.rgb2lab(target_state_raw[i] + 0.5)
@@ -628,7 +635,7 @@ class Agent:
                     initial_score += - np.sqrt(np.sum(( target_lab - initial_lab )**2, axis=2)).mean()/10.0
                     retouched_score += - np.sqrt(np.sum(( target_lab - retouched_lab )**2, axis=2)).mean()/10.0
             except Exception as e:
-                print(str(e))
+                print('[!!!! TESTING ERROR] Exception: %s' % str(e))
         return initial_score, retouched_score
 
 
