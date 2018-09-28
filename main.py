@@ -4,7 +4,7 @@ import numpy as np
 import random, sys
 import shutil
 import skimage
-from PIL import Image, ImageEnhance
+from PIL import Image, ImageEnhance, ImageFile
 from skimage import transform, io, img_as_float
 import glob, pickle
 from random import shuffle
@@ -20,6 +20,7 @@ from get_global_feature import get_global_feature
 from action import take_action, action_size
 
 np.set_printoptions(formatter={'float': lambda x: "{0:0.3f}".format(x)}, linewidth=200, threshold=np.nan)
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 class Agent:
@@ -142,6 +143,8 @@ class Agent:
         self.saver.save(sess, "./checkpoints/"+self.prefix+".ckpt", global_step=step)
 
     def load_model(self, model_path):
+        print('Restoring model ...')
+        self.saver = tf.train.import_meta_graph(model_path+'.meta')
         self.saver.restore(sess, model_path)
         print (" [*] Load success: %s"%model_path)
         return True
@@ -571,6 +574,10 @@ class Agent:
         if self.logging:
             print(actions)
 
+        # print(raw_images_target.shape, retouched_raw_images.shape)
+        # l2 = sess.run([self.loss], feed_dict={self.target_q_t: raw_images_target,
+        #                                       self.s_t: retouched_raw_images})
+        # print('Loss: ', l2)
         state, final_score = self.get_state(state_raw, target_state_raw, history=history)
         score_diff = final_score - score_initial
         if self.logging or self.test_logging:
@@ -703,7 +710,7 @@ if __name__ == '__main__':
     # Arguments
     ################################################################
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model-path", type=str)
+    parser.add_argument("--model-path", type=str, default=None)
     parser.add_argument("--prefix")
     parser.add_argument("--gpu", type=str, default='0', help="assign a gpu")
     parser.add_argument("--data-dir", type=str, default='E:\work\image enhancement\data\mit5k', help="Data directory")
@@ -734,13 +741,19 @@ if __name__ == '__main__':
         agent.init_preprocessor()
         agent.init_model()
         agent.init_img_list()
-        if model_path:
+        if args.test:
+            if model_path is None:
+                print('[Error] Please give the model path!!!')
             agent.load_model(model_path)
             print("run test with model {}".format(model_path))
             agent.step = 0
             for i in range(agent.test_count):
                 init_score, final_score = agent.test(in_order=True, idx=i)
         else:
+            if model_path is not None:
+                agent.load_model(model_path)
+            # writer = tf.summary.FileWriter('log/', tf.get_default_graph())
+            # writer.close()
             print("start training with prefix {}".format(prefix))
             agent.train_with_queue()
 
