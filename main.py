@@ -718,6 +718,7 @@ if __name__ == '__main__':
     parser.add_argument("--batch-size", type=int, default=4, help="Batch size.")
     parser.add_argument("--seq-len", type=int, default=50, help="The number of retouch actions to take.")
     parser.add_argument("--test-step", type=int, default=160000, help="Test Step.")
+    parser.add_argument('--test', action="store_true", default=False)
     args = parser.parse_args()
     model_path = args.model_path
     prefix = args.prefix
